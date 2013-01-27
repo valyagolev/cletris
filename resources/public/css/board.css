@@ -1,0 +1,17 @@
+table.board {
+  border: 1px solid black;
+  margin: 0 auto;
+}
+
+table.board td {
+  height: 25px;
+  width: 25px;
+}
+
+table.board td.filld {
+  background-color: #343434;
+}
+
+table.board td.figur {
+  background-color: red;
+}
