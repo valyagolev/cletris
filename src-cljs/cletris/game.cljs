@@ -9,6 +9,7 @@
         [cletris.board :only [random-figure
                               board-initial
                               invalid-figure?
+                              figure-center
                               move-figure
                               board-template
                               freeze]]))
@@ -20,8 +21,6 @@
 (def $content (html-into $body [:div#content]))
 
 
-
-
 (def game-state-initial
   {:ended false :figure (random-figure) :board board-initial})
 
@@ -31,8 +30,9 @@
 
 (def key-move-signal
   (signal/filter
-    (signal/map #(case (.-keyCode %) 37 :left, 39 :right, 40 :down, nil)
+    (signal/map #(case (.-keyCode %) 37 :left, 39 :right, 40 :down, 32 :rotate, nil)
                 (.keydownAsObservable $body))))
+
 
 (def move-signal
   (signal/marked :move
@@ -59,6 +59,7 @@
                invalid? (invalid-figure? board newf)]
             (cond (and invalid? (= move :down))       (figure-stuck state)
                   invalid?                            state
+                  (= move :rotate)                    (assoc state :figure newf)
                   :else                               (assoc state :figure newf)))
     :else                                             state))
 
@@ -67,10 +68,11 @@
   (signal/reduce game-state-transition
     game-state-initial (signal/concat move-signal restart-signal)))
 
-
 (defn draw-state [{:keys [ended figure board]}]
   (.html $content
     (if ended (hiccups/html [:h1 "fail :("])
         (board-template board figure))))
 
 (.subscribe game-state-signal draw-state)
+
+

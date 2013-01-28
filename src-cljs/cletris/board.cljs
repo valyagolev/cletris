@@ -6,21 +6,47 @@
         [jayq.util :only [log]]
         [clojure.string :only [split]]))
 
-(def board-width 6)
-(def board-height 12)
+(def board-width 10)
+(def board-height 13)
 
-(def board-initial #{ [11 1] [10 1] [11 2] [11 3] [11 5] })
-(def figure-initial #{ [0 2] [1 2] })
+(def board-initial #{})
 
-(defn transition [[y x]]
-  (fn [[fy fx]] [(+ fy y) (+ fx x)]))
+(defn figure-center-by-dimension [figure dimension]
+  (let [cs (map #(% dimension) figure)
+        mx (apply max cs)
+        mn (apply min cs)
+        sz (- mx mn)] (+ mn (quot sz 2))))
 
-(defn move-figure [figure move]
-  (let [deltas (case move
+
+(defn figure-center [figure]
+  (map #(figure-center-by-dimension figure %) [0 1]))
+
+
+(defn transition [figure move]
+  (if (= :rotate move)
+
+    (let [[cy cx] (figure-center figure)]
+      (log "center" (str [cx cy]))
+      (fn [[fy fx]]
+        (let [my (- fy cy)
+              mx (- fx cx)
+              ny mx
+              nx (- my)
+              ry (+ ny cy)
+              rx (+ nx cx)]
+              [ry rx])))
+
+
+
+
+      (let [[y x] (case move
                      :left  [0 -1]
                      :right [0 1]
                      :down  [1 0])]
-    (set (map (transition deltas) figure))))
+        (fn [[fy fx]] [(+ fy y) (+ fx x)]))))
+
+(defn move-figure [figure move]
+  (set (map (transition figure move) figure)))
 
 (defn invalid-point? [[y x]]
   (or (< y 0) (< x 0) (>= y board-height) (>= x board-width)))
@@ -30,6 +56,7 @@
 
 (defn indexed [coll]
   (map vector (iterate inc 0) coll))
+
 
 (defn figure-from-str [str]
   (set (for [[i line] (indexed (split str #"\s+"))
@@ -67,7 +94,6 @@
         board))))
 
 (defn freeze [figure board]
-  (log (str figure))
   (let [new-board (into figure board)]
     (reduce remove-full-line new-board (find-full-lines new-board))))
 

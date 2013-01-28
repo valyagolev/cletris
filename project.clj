@@ -7,14 +7,17 @@
                            [org.clojure/math.combinatorics "0.0.3"]]
 					  :plugins [[lein-cljsbuild "0.3.0"]] ; cljsbuild plugin
             :cljsbuild {
-             :builds [{
-             		:source-paths ["src-cljs"]
+             :builds [
+              {
+             		:source-paths ["src-cljs/"]
 		            :compiler
     	         		{
               			:output-to "resources/public/js/cljs.js"
 			              ;;:optimizations :simple
       			        :pretty-print true
+                    :incremental true
             		  }
-             	}]}
+             	}
+              ]}
             :main cletris.server)
 
