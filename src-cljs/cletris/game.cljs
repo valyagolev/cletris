@@ -9,7 +9,7 @@
         [cletris.board :only [figure-initial
                               board-initial
                               valid-figure?
-                              fail-figure?
+                              stopped-figure?
                               move-figure
                               board-template]]))
 
@@ -23,7 +23,7 @@
 
 
 (def game-state-initial
-  {:ended false :figure figure-initial})
+  {:ended false :figure figure-initial :board board-initial})
 
 
 (def time-move-signal
@@ -44,16 +44,15 @@
 
 
 
-(defn game-state-transition [{:keys [ended figure] :as state}
-                             {:keys [restart move] :as action}]
+(defn game-state-transition [{:keys [ended figure board] :as state}
+                             {:keys [restart move]       :as action}]
 
   (cond
     restart                                                         game-state-initial
     ended                                                           state
-    move        (let [new-figure (move-figure figure move)]
-                  (cond (fail-figure? board-initial new-figure)     {:ended true}
-                        (not (valid-figure? new-figure))            state
-                        :else                                       (assoc state :figure new-figure)))
+    move  (let [new-figure (move-figure figure move)]
+            (cond (not (valid-figure? board new-figure))            state
+                  :else                                             (assoc state :figure new-figure)))
     :else                                                           state))
 
 
@@ -62,9 +61,9 @@
     game-state-initial (signal/concat move-signal restart-signal)))
 
 
-(defn draw-state [state]
+(defn draw-state [{:keys [ended figure board]}]
   (.html $content
-    (if (:ended state) (hiccups/html [:h1 "fail :("])
-        (board-template board-initial (:figure state)))))
+    (if ended (hiccups/html [:h1 "fail :("])
+        (board-template board figure))))
 
 (.subscribe game-state-signal draw-state)

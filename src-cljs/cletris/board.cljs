@@ -24,12 +24,8 @@
 (defn valid-point? [[y x]]
   (and (>= y 0) (>= x 0) (< y board-height) (< x board-width)))
 
-(defn valid-figure? [figure]
-  (every? valid-point? figure))
-
-(defn fail-figure? [board figure]
-  (log (str board) (str figure) (str (some board figure)))
-  (some board figure))
+(defn valid-figure? [board figure]
+  (and (every? valid-point? figure) (not-any? board figure)))
 
 (defhtml board-template [board figure]
   [:table.board
