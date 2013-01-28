@@ -1,6 +1,7 @@
 table.board {
   border: 1px solid black;
   margin: 1em auto;
+  font-size: 0.4em;
 }
 
 table.board td {
@@ -12,6 +13,11 @@ table.board td.filld {
   background-color: #343434;
 }
 
-table.board td.figur {
+table.board td.figure {
   background-color: red;
+}
+
+h1 {
+    margin: 3em auto;
+    font-size: 1.9em;
 }

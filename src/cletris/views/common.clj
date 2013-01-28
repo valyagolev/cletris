@@ -9,6 +9,7 @@
                (include-js "https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js")
                (include-js "/js/rxjs/rx.js")
                (include-js "/js/rxjs/rx.time.js")
+               (include-js "/js/rxjs/rx.experimental.js")
                (include-js "/js/rxjs/rxjs-jquery/lib/rx.jquery.js")
                (include-css "/css/reset.css")
                (include-css "/css/board.css")]
