@@ -3,7 +3,8 @@
   (:require-macros [hiccups.core :as hiccups])
   (:require [hiccups.runtime :as hiccupsrt])
   (:use [jayq.core :only [$ append-to]]
-        [jayq.util :only [log]]))
+        [jayq.util :only [log]]
+        [clojure.string :only [split]]))
 
 (def board-width 6)
 (def board-height 12)
@@ -27,6 +28,31 @@
 (defn invalid-figure? [board figure]
   (or (some invalid-point? figure) (some board figure)))
 
+(defn indexed [coll]
+  (map vector (iterate inc 0) coll))
+
+(defn figure-from-str [str]
+  (set (for [[i line] (indexed (split str #"\s+"))
+        [j val]  (indexed line)
+        :when (= \1 val)] [i j])))
+
+(def figures (map figure-from-str [
+  "1111",
+  "100
+   111",
+  "001
+   111",
+  "11
+   11",
+  "011
+   110",
+  "010
+   111",
+  "110
+   011"]))
+
+(defn random-figure []
+  (rand-nth figures))
 
 (defn full-line? [line board]
   (every? board (for [x (range board-width)] [line x])))
@@ -41,8 +67,8 @@
         board))))
 
 (defn freeze [figure board]
+  (log (str figure))
   (let [new-board (into figure board)]
-    (log (str (find-full-lines new-board)))
     (reduce remove-full-line new-board (find-full-lines new-board))))
 
 

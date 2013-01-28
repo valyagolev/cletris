@@ -6,7 +6,7 @@
             [cletris.signals :as signal])
   (:use [jayq.core :only [$ append-to css]]
         [jayq.util :only [log]]
-        [cletris.board :only [figure-initial
+        [cletris.board :only [random-figure
                               board-initial
                               invalid-figure?
                               move-figure
@@ -23,7 +23,7 @@
 
 
 (def game-state-initial
-  {:ended false :figure figure-initial :board board-initial})
+  {:ended false :figure (random-figure) :board board-initial})
 
 
 (def time-move-signal
@@ -43,6 +43,13 @@
   (signal/marked :restart (.clickAsObservable $body)))
 
 
+(defn figure-stuck [{:keys [figure board] :as state}]
+  (let [newf (random-figure)
+        newb (freeze figure board)]
+    (if (some newb newf)                              (assoc state :ended true)
+                                                      (assoc state :figure newf :board newb))))
+
+
 (defn game-state-transition [{:keys [ended figure board] :as state}
                              {:keys [restart move]       :as action}]
   (cond
@@ -50,7 +57,7 @@
     ended                                             state
     move (let [newf (move-figure figure move)
                invalid? (invalid-figure? board newf)]
-            (cond (and invalid? (= move :down))       (assoc state :figure figure-initial :board (freeze figure board))
+            (cond (and invalid? (= move :down))       (figure-stuck state)
                   invalid?                            state
                   :else                               (assoc state :figure newf)))
     :else                                             state))
