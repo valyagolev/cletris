@@ -3,7 +3,7 @@
   (:require-macros [hiccups.core :as hiccups])
   (:require [hiccups.runtime :as hiccupsrt]
             [clojure.browser.repl :as repl])
-  (:use [jayq.core :only [$ append-to]]
+  (:use [jayq.core :only [$ append-to css]]
         [jayq.util :only [log]]))
 
 
@@ -32,7 +32,7 @@
 
 
 (def board-initial [[0 0 0 0 0 0]
-                    [0 0 0 0 0 0]
+                    [0 0 0 0 0 1]
                     [0 0 0 0 0 0]
                     [0 0 0 0 0 0]
                     [0 0 0 0 0 0]
@@ -98,6 +98,42 @@
                 (range (width figure)))))))
 
 
+(defn validate-position [board [fy fx] figure]
+  (let [figure-width (count (figure 0))
+        figure-height (count figure)]
+
+    (cond
+      (or (> (+ fy (height figure)) (height board))
+          (> (+ fx (width figure)) (width board))
+          (< fy 0)
+          (< fx 0))
+            :invalid
+
+      (not-any? (fn [[f b]] (= 1 f b))
+                (for [y (range figure-height)
+                      x (range figure-width)]
+
+                  [(get-2d figure x y)
+                   (get-2d board (+ y fy) (+ x fx))]))
+            :good
+
+      :else :fail)))
+
+
+
+
+
+(defn logged [signal]
+  (.subscribe signal #(log (str %))))
+
+
+(defn accumulate [signal initial f]
+  (.startWith (.scan signal initial f) initial))
+
+(defn filtered [f signal]
+  (.where signal f))
+
+
 (def keydowns (.keydownAsObservable cletris.board/$body))
 
 (def move-signal
@@ -105,38 +141,33 @@
     (.select keydowns #(case (.-keyCode %) 37 :left, 39 :right, nil))
      (complement nil?)))
 
+(logged move-signal)
 
 (def pos-signal
-  (.startWith
-    (.scan move-signal
-         figur-pos-initial
-         (fn [[y x] move]
-            (let [new-x (case move
-                              :left (- x 1)
-                              :right (+ x 1))]
-              (if (or (< new-x 0) (> (+ (width figure) new-x) board-width)) [y x]
-                  [y new-x]))))
-    figur-pos-initial))
+  (accumulate move-signal figur-pos-initial
+    (fn [[y x] move]
+        (let [new-x (case move
+                      :left (- x 1)
+                      :right (+ x 1))
+              validity  (validate-position board-initial
+                                        [y new-x] figure)]
+
+          (case validity
+            :fail     nil
+            :invalid  [y x]
+            :good     [y new-x])))))
+
+(logged pos-signal)
 
 (def board-signal
-  (.where
-      (.select pos-signal
-           ; board-initial
-           (fn [figure-pos]
-            (let [new-board (figure-on-board board-initial figure-pos figure)]
-              (if (= :invalid new-board) nil
-                  new-board))))
-      (complement nil?)))
+  (.select pos-signal
+    (fn [figure-pos]
+      (if (nil? figure-pos) nil
+        (figure-on-board board-initial figure-pos figure)))))
 
 
-
-(.subscribe move-signal log)
-(.subscribe pos-signal #(log (str %)))
-(.subscribe board-signal log)
-
-
-
-(.subscribe board-signal #(.html $content (board-template %)))
+(.subscribe board-signal (fn [board]
+  (.html $content (if (nil? board) "fail :(" (board-template board)))))
 
 
 
