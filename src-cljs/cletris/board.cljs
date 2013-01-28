@@ -9,7 +9,7 @@
 (def board-height 12)
 
 (def board-initial #{ [11 1] [10 1] [11 2] [11 3] [11 5] })
-(def figure-initial #{ [0 2] [1 2] [1 3] })
+(def figure-initial #{ [0 2] [1 2] })
 
 (defn transition [[y x]]
   (fn [[fy fx]] [(+ fy y) (+ fx x)]))
@@ -26,6 +26,25 @@
 
 (defn invalid-figure? [board figure]
   (or (some invalid-point? figure) (some board figure)))
+
+
+(defn full-line? [line board]
+  (every? board (for [x (range board-width)] [line x])))
+
+(defn find-full-lines [board]
+  (for [line (range board-height) :when (full-line? line board)] line))
+
+(defn remove-full-line [board line]
+  (set
+    (map (fn [[y x]] (if (< y line) [(+ y 1) x] [y x]))
+      (filter (fn [[y x]] (not= y line))
+        board))))
+
+(defn freeze [figure board]
+  (let [new-board (into figure board)]
+    (log (str (find-full-lines new-board)))
+    (reduce remove-full-line new-board (find-full-lines new-board))))
+
 
 (defhtml board-template [board figure]
   [:table.board

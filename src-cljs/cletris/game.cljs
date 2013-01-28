@@ -10,7 +10,8 @@
                               board-initial
                               invalid-figure?
                               move-figure
-                              board-template]]))
+                              board-template
+                              freeze]]))
 
 (defn html-into [$parent content]
   (append-to ($ (hiccups/html content)) $parent))
@@ -42,7 +43,6 @@
   (signal/marked :restart (.clickAsObservable $body)))
 
 
-
 (defn game-state-transition [{:keys [ended figure board] :as state}
                              {:keys [restart move]       :as action}]
   (cond
@@ -50,7 +50,7 @@
     ended                                             state
     move (let [newf (move-figure figure move)
                invalid? (invalid-figure? board newf)]
-            (cond (and invalid? (= move :down))       (assoc state :figure figure-initial :board (into figure board))
+            (cond (and invalid? (= move :down))       (assoc state :figure figure-initial :board (freeze figure board))
                   invalid?                            state
                   :else                               (assoc state :figure newf)))
     :else                                             state))
