@@ -39,10 +39,8 @@
                     [0 0 0 0 0 0]
                     [0 0 0 0 0 0]
                     [0 0 0 0 0 0]
-                    [0 0 0 0 0 0]
-                    [0 0 0 0 0 0]
                     [1 0 0 0 0 0]
-                    [1 1 0 0 0 1]])
+                    [1 1 1 0 0 1]])
 
 (defn change-2d [coll x y val]
   (assoc coll x
@@ -66,6 +64,7 @@
 (defn height [col] (count col))
 
 (def board-width (width board-initial))
+(def board-height (height board-initial))
 
 (defn figure-on-board [board [fy fx] figure]
   "Returns either merged board,
@@ -76,13 +75,13 @@
         figure-height (count figure)]
 
     (if (or (> (+ fx (width figure)) board-width)
-            (> (+ fy (height figure)) (height board)))
+            (> (+ fy (height figure)) board-height))
           :invalid
 
         (reduce
          (fn [brd [y x]]
             (if (= brd :fail) :fail
-              (let [by (+ y fy)
+              (let [by (+ fy y)
                     bx (+ fx x)
                     fig-val (get-2d figure y x)
                     brd-val (get-2d brd by bx)]
@@ -113,7 +112,7 @@
                 (for [y (range figure-height)
                       x (range figure-width)]
 
-                  [(get-2d figure x y)
+                  [(get-2d figure y x)
                    (get-2d board (+ y fy) (+ x fx))]))
             :good
 
@@ -123,8 +122,8 @@
 
 
 
-(defn logged [signal]
-  (.subscribe signal #(log (str %))))
+(defn logged [signal & strs]
+  (.subscribe signal #(apply log (str %) " " strs)))
 
 
 (defn accumulate [signal initial f]
@@ -136,28 +135,40 @@
 
 (def keydowns (.keydownAsObservable cletris.board/$body))
 
-(def move-signal
+(def key-move-signal
   (.where
     (.select keydowns #(case (.-keyCode %) 37 :left, 39 :right, nil))
      (complement nil?)))
 
-(logged move-signal)
+(def time-move-signal
+  (.select ((-> js/Rx .-Observable .-interval) 1000) (constantly :down)))
+
+(logged time-move-signal "time")
+
+(def move-signal ((-> js/Rx .-Observable .-merge) key-move-signal time-move-signal))
+
+(logged move-signal "move")
 
 (def pos-signal
   (accumulate move-signal figur-pos-initial
     (fn [[y x] move]
         (let [new-x (case move
                       :left (- x 1)
-                      :right (+ x 1))
+                      :right (+ x 1)
+                      x)
+              new-y (case move
+                      :down (+ y 1)
+                      y)
               validity  (validate-position board-initial
-                                        [y new-x] figure)]
+                                           [new-y new-x] figure)]
 
           (case validity
             :fail     nil
             :invalid  [y x]
-            :good     [y new-x])))))
+            :good     [new-y new-x]
+            :other )))))
 
-(logged pos-signal)
+(logged pos-signal "pos")
 
 (def board-signal
   (.select pos-signal
