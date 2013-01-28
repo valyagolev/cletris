@@ -8,8 +8,7 @@
         [jayq.util :only [log]]
         [cletris.board :only [figure-initial
                               board-initial
-                              valid-figure?
-                              stopped-figure?
+                              invalid-figure?
                               move-figure
                               board-template]]))
 
@@ -46,14 +45,15 @@
 
 (defn game-state-transition [{:keys [ended figure board] :as state}
                              {:keys [restart move]       :as action}]
-
   (cond
-    restart                                                         game-state-initial
-    ended                                                           state
-    move  (let [new-figure (move-figure figure move)]
-            (cond (not (valid-figure? board new-figure))            state
-                  :else                                             (assoc state :figure new-figure)))
-    :else                                                           state))
+    restart                                           game-state-initial
+    ended                                             state
+    move (let [newf (move-figure figure move)
+               invalid? (invalid-figure? board newf)]
+            (cond (and invalid? (= move :down))       (assoc state :figure figure-initial :board (into figure board))
+                  invalid?                            state
+                  :else                               (assoc state :figure newf)))
+    :else                                             state))
 
 
 (def game-state-signal

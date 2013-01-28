@@ -21,11 +21,11 @@
                      :down  [1 0])]
     (set (map (transition deltas) figure))))
 
-(defn valid-point? [[y x]]
-  (and (>= y 0) (>= x 0) (< y board-height) (< x board-width)))
+(defn invalid-point? [[y x]]
+  (or (< y 0) (< x 0) (>= y board-height) (>= x board-width)))
 
-(defn valid-figure? [board figure]
-  (and (every? valid-point? figure) (not-any? board figure)))
+(defn invalid-figure? [board figure]
+  (or (some invalid-point? figure) (some board figure)))
 
 (defhtml board-template [board figure]
   [:table.board
