@@ -1,6 +1,6 @@
 table.board {
   border: 1px solid black;
-  margin: 0 auto;
+  margin: 1em auto;
 }
 
 table.board td {
