@@ -24,7 +24,6 @@
 
 (defn transition [figure move]
   (if (= :rotate move)
-
     (let [[cy cx] (figure-center figure)]
       (log "center" (str [cx cy]))
       (fn [[fy fx]]
@@ -35,10 +34,6 @@
               ry (+ ny cy)
               rx (+ nx cx)]
               [ry rx])))
-
-
-
-
       (let [[y x] (case move
                      :left  [0 -1]
                      :right [0 1]
@@ -93,9 +88,6 @@
       (filter (fn [[y x]] (not= y line))
         board))))
 
-(defn freeze [figure board]
-  (let [new-board (into figure board)]
-    (reduce remove-full-line new-board (find-full-lines new-board))))
 
 
 (defhtml board-template [board figure]
