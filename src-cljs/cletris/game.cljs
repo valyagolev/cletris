@@ -3,7 +3,7 @@
   (:require-macros [hiccups.core :as hiccups])
   (:require [hiccups.runtime :as hiccupsrt]
             [clojure.browser.repl :as repl]
-            [cletris.signals :as signal]
+
             [water.core :as s])
   (:use [jayq.core :only [$ append-to css]]
         [jayq.util :only [log]]
@@ -40,7 +40,7 @@
   {:ended false :figure (random-figure) :board board-initial :score 0})
 
 
-(def time-move-signal (s/interval-signal 2000 :down))
+(def time-move-signal (s/interval-signal 500 :down))
 
 
 
@@ -67,66 +67,72 @@
     (s/concat time-move-signal key-move-signal)))
 
 
+(def click-signal
+  (s/map (constantly 1)
+    (s/callback-signal #(.click $body %))))
+
+(def click-count
+  (s/reduce + 0 click-signal))
+
+
+
+
+
+(defn freeze [figure board]
+  (let [new-board (into figure board)
+        full-lines (find-full-lines new-board)]
+    {:full-lines (count full-lines)
+     :new-board (reduce remove-full-line new-board full-lines)}))
+
+
+(defn figure-stuck [{:keys [figure board score] :as state}]
+  (log "current-score" score)
+  (let [newf                           (random-figure)
+        {:keys [full-lines new-board]} (freeze figure board)
+        new-state (if (some new-board newf) (assoc state :ended true)
+                                            (assoc state
+                                              :figure newf
+                                              :board new-board
+                                              :score (+ score full-lines)))]
+    new-state))
+
+
+
+
+(defn game-state-transition [{:keys [ended figure board score] :as state}
+                             {:keys [restart move]             :as action}]
+  (cond
+    restart                                           game-state-initial
+    ended                                             state
+    move (let [newf (move-figure figure move)
+               invalid? (invalid-figure? board newf)]
+            (cond (and invalid? (= move :down))       (figure-stuck state)
+                  invalid?                            state
+                  :else                               (assoc state :figure newf)))
+    :else                                             state))
+
+
+(def game-state-signal
+  (s/reduce game-state-transition
+    game-state-initial move-signal))
+
+
+
 (.append
   $body
   (signal-panel
     "Key Move" key-move-signal
     "Time Move" time-move-signal
-    "Move" move-signal))
+    "Move" move-signal
+    "Score" (s/changes (s/map :score game-state-signal))))
 
 
+(defn draw-state [{:keys [ended figure board] :as state}]
+  (.html $content
+    (if ended (hiccups/html [:h1 "fail :("])
+        (board-template board figure))))
 
-; (def restart-signal
-;   (signal/marked :restart (.clickAsObservable $body)))
-
-
-; (defn freeze [figure board]
-;   (let [new-board (into figure board)
-;         full-lines (find-full-lines new-board)]
-;     {:full-lines (count full-lines)
-;      :new-board (reduce remove-full-line new-board full-lines)}))
-
-
-; (defn figure-stuck [{:keys [figure board score] :as state}]
-;   (log "current-score" score)
-;   (let [newf                           (random-figure)
-;         {:keys [full-lines new-board]} (freeze figure board)
-;         new-state (if (some new-board newf) (assoc state :ended true)
-;                                             (assoc state
-;                                               :figure newf
-;                                               :board new-board
-;                                               :hello "hey"
-;                                               :score (+ score full-lines)))]
-;     (log "current-full-lines" full-lines)
-;     (assoc new-state :score2 full-lines)))
-
-
-
-
-; (defn game-state-transition [{:keys [ended figure board score] :as state}
-;                              {:keys [restart move]             :as action}]
-;   (cond
-;     restart                                           game-state-initial
-;     ended                                             state
-;     move (let [newf (move-figure figure move)
-;                invalid? (invalid-figure? board newf)]
-;             (cond (and invalid? (= move :down))       (figure-stuck state)
-;                   invalid?                            state
-;                   :else                               (assoc state :figure newf)))
-;     :else                                             state))
-
-
-; (def game-state-signal
-;   (signal/reduce game-state-transition
-;     game-state-initial (signal/concat move-signal restart-signal)))
-
-; (defn draw-state [{:keys [ended figure board] :as state}]
-;   (log (str state))
-;   (.html $content
-;     (if ended (hiccups/html [:h1 "fail :("])
-;         (board-template board figure))))
-
-; (.subscribe game-state-signal draw-state)
+(s/subscribe game-state-signal draw-state)
 
 
 ; (def $state (html-into $body [:div#state]))
