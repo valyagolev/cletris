@@ -17,6 +17,17 @@ table.board td.figure {
   background-color: red;
 }
 
+table.signal-panel {
+    margin: 1em 1em;
+}
+
+table.signal-panel td {
+    width: 120px;
+    height: 3em;
+    text-align: center;
+    border: 1px solid black;
+}
+
 
 h1 {
     margin: 3em auto;
